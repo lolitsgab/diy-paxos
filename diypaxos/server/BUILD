@@ -7,7 +7,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//diypaxos/proto",
-        "@org_golang_google_grpc//codes",
-        "@org_golang_google_grpc//status",
+        "//diypaxos/storage",
     ],
 )

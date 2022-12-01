@@ -14,7 +14,7 @@ service SimpleKvStore {
 
 message InsertRequest {
   string key = 1;
-  bytes value = 2;
+  int32 val = 2;
 }
 
 message InsertResponse {}
@@ -24,19 +24,19 @@ message GetRequest {
 }
 
 message GetResponse {
-  
+  int32 val = 1;
 }
 
 message UpsertRequest {
   string key = 1;
-  bytes value = 2;
+  int32 val = 2;
 }
 
 message UpsertResponse {}
 
 message UpdateRequest {
   string key = 1;
-  bytes value = 2;
+  int32 val = 2;
 }
 
 message UpdateResponse {}
