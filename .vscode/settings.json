@@ -7,6 +7,9 @@
     "runtest": false
   },
   "gopls": {
+    "completeUnimported": true,
+		"completionDocumentation": true,
+		"hoverKind": "SynopsisDocumentation", // No/Synopsis/Full, default Synopsis
     "build.directoryFilters": [
       "-bazel-bin",
       "-bazel-out",
@@ -27,8 +30,19 @@
       "vendor": false
     },
   },
-  "go.useLanguageServer": true,
-  "go.buildOnSave": "package",
-  "go.lintOnSave": "package",
-  "go.vetOnSave": "off",
+  // gopls config
+	// "go.useLanguageServer": true,
+	"go.languageServerExperimentalFeatures": {
+		"diagnostics": true, // for build and vet errors as you type
+	},
+  "go.lintTool": "golint",
+	// "go.buildOnSave": "package",
+	// "go.vetOnSave": "off",
+	"[go]": {
+		"editor.snippetSuggestions": "top",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": true
+		},
+	},		
 }
