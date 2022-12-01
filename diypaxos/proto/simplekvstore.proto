@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "google/rpc/status.proto";
-
 service SimpleKvStore {
   rpc Get (GetRequest) returns (GetResponse) {}
 
@@ -19,9 +17,7 @@ message InsertRequest {
   bytes value = 2;
 }
 
-message InsertResponse {
-  google.rpc.Status status = 1;
-}
+message InsertResponse {}
 
 message GetRequest {
   string key = 1;
