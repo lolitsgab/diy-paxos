@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-
 http_archive(
     name = "io_bazel_rules_go",
     sha256 = "099a9fb96a376ccbbb7d291ed4ecbdfd42f6bc822ab77ae6f1b5cb9e914e94fa",
@@ -1029,32 +1028,6 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
 
-# http_archive(
-#     name = "com_google_googleapis",
-#     urls = ["https://github.com/googleapis/googleapis/archive/refs/heads/master.zip"],
-#     strip_prefix = "googleapis-master",
-# #     build_file_content = """
-# # load("@rules_proto//proto:defs.bzl", "proto_library")
-
-# # proto_library(
-# #     name = "rpc_status_protos_src",
-# #     deps = [
-# #         "//google/rpc:status",
-# #     ],
-# #     visibility = ["//visibility:public"],
-# #     )
-# # """
-#     # patch_cmds = ["find google -type f -name BUILD.bazel -delete"],
-# )
-
-# # Google APIs - used by Stackdriver exporter.
-# load("@com_google_googleapis//:repository_rules.bzl", "switched_rules_by_language")
-
-# switched_rules_by_language(
-#     name = "com_google_googleapis_imports",
-#     cc = True,
-#     grpc = True,
-# )
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
