@@ -2,11 +2,30 @@
 
 This repo will contain a simple implementation of Paxos. The underlying datastore for which we will attempt to keep in consensus will be a basic KV store.
 
-At the moment, I am bored and kind of winging this project. So this README should evolve with documentation as I become more commited to the project.
+## KvStore
+
+The server exposes the KvStoreService. This service expose the following endpoints:
+
+* Get
+
+  * Get a value by key.
+
+* Insert
+
+   * Insert a key-value pair
+
+* Remove
+  
+  * Remove by key
+
+* Update
+  
+  * Update by key.
+
+* Upsert
+  
+  * Update value if key already exists, insert value if it does not exist.
+  
+The key must be of type  `string`, and the value must be of type `int32`. I may extend the value to be a byte blob, but for now, looking to keep things simple/
 
 
-## Call HelloWorld service:
-
-```shell
-grpcurl -plaintext -d '{"name": "bob"}' localhost:8080  HelloWorld.SayHello/
-```
