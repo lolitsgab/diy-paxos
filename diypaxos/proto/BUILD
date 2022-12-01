@@ -6,8 +6,6 @@ proto_library(
     name = "simplekvstore_proto",
     srcs = ["simplekvstore.proto"],
     visibility = ["//visibility:public"],
-    # deps=["@com_google_googleapis//:rpc_status_protos_src"],
-    deps = ["@go_googleapis//google/rpc:status_proto"],
 )
 
 go_proto_library(
@@ -16,7 +14,6 @@ go_proto_library(
     importpath = "diy-paxos/diypaxos/proto",
     proto = ":simplekvstore_proto",
     visibility = ["//visibility:public"],
-    deps = ["@go_googleapis//google/rpc:status_go_proto"],
 )
 
 go_library(

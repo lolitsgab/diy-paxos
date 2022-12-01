@@ -2,6 +2,7 @@ package main
 
 import (
 	"diy-paxos/diypaxos/server"
+	"diy-paxos/diypaxos/storage"
 	"flag"
 	"fmt"
 	"log"
@@ -24,7 +25,8 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterSimpleKvStoreServer(s, &server.Server{})
+	srv := server.NewServer("server1", storage.NewInMemoryStorage())
+	pb.RegisterSimpleKvStoreServer(s, srv)
 	reflection.Register(s)
 	log.Printf("server listening at %v", *port)
 	if err := s.Serve(lis); err != nil {
