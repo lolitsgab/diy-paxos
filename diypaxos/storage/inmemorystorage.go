@@ -5,6 +5,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Storage exposes an API to interface with a KV Storage container.
 type Storage interface {
 	Insert(k string, v int32) error
 	Get(k string) (int32, error)
@@ -13,15 +14,18 @@ type Storage interface {
 	Upsert(k string, v int32) error
 }
 
+// InMemoryStorage implements Storage with an in-memory table.
 type InMemoryStorage struct {
 	store map[string]int32
 }
 
+// NewInMemoryStorage creates a new InMemoryStorage instance.
 func NewInMemoryStorage() Storage {
 	return &InMemoryStorage{map[string]int32{}}
 }
 
-func (i InMemoryStorage) Insert(k string, v int32) error {
+// Insert inserts a KV pair into the Storage container.
+func (i *InMemoryStorage) Insert(k string, v int32) error {
 	if _, exists := i.store[k]; exists {
 		return status.New(codes.AlreadyExists, "cannot insert to an already populated key").Err()
 	}
@@ -29,14 +33,16 @@ func (i InMemoryStorage) Insert(k string, v int32) error {
 	return nil
 }
 
-func (i InMemoryStorage) Get(k string) (int32, error) {
+// Get fetches value by key from the Storage container.
+func (i *InMemoryStorage) Get(k string) (int32, error) {
 	if _, exists := i.store[k]; !exists {
 		return -1, status.New(codes.NotFound, "cannot get non existent key").Err()
 	}
 	return i.store[k], nil
 }
 
-func (i InMemoryStorage) Remove(k string) error {
+// Remove deletes a value by key from a storage container.
+func (i *InMemoryStorage) Remove(k string) error {
 	if _, exists := i.store[k]; !exists {
 		return status.New(codes.NotFound, "cannot remove non existent key").Err()
 	}
@@ -44,7 +50,8 @@ func (i InMemoryStorage) Remove(k string) error {
 	return nil
 }
 
-func (i InMemoryStorage) Update(k string, v int32) error {
+// Update changes the value associated with a key entry in the Storage container iff it exists.
+func (i *InMemoryStorage) Update(k string, v int32) error {
 	if _, exists := i.store[k]; !exists {
 		return status.New(codes.NotFound, "cannot update a non existent key").Err()
 	}
@@ -52,7 +59,8 @@ func (i InMemoryStorage) Update(k string, v int32) error {
 	return nil
 }
 
-func (i InMemoryStorage) Upsert(k string, v int32) error {
+// Upsert changes the value associated with a key entry in the Storage container, or creates it if it does not exist.
+func (i *InMemoryStorage) Upsert(k string, v int32) error {
 	if _, exists := i.store[k]; !exists {
 		return i.Insert(k, v)
 	}
