@@ -25,17 +25,17 @@ The key must be of type  `string`, and the value must be of type `int32`. I may 
 ### Start
 
 ```shell
-$ bazel run //diypaxos/k8:server.apply
+bazel run //diypaxos/k8:server.apply
 ```
 
 ### Stop
 
 ```shell
-$ bazel run //diypaxos/k8:server.delete
+bazel run //diypaxos/k8:server.delete
 ```
 
 ### Update
 
 ```shell
-$ bazel run //diypaxos/k8:server.update
+bazel run //diypaxos/k8:server.update
 ```
