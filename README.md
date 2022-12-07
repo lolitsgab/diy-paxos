@@ -22,20 +22,46 @@ The key must be of type  `string`, and the value must be of type `int32`. I may 
 
 ## Running Docker container via K8s
 
-### Start
+We are deploying a Golang gRPC server using K8s. The base server is Ubuntu 16.0, but we can deploy a distroless container by removing the
+`base` line from the deployment BUILD file. We are keeping it with a base of K8s just to facilitate debugging.
+
+### Start/Stop/Update
+
+#### Start
 
 ```shell
 bazel run //diypaxos/k8:server.apply
 ```
 
-### Stop
+#### Stop
 
 ```shell
 bazel run //diypaxos/k8:server.delete
 ```
 
-### Update
+#### Update
 
 ```shell
 bazel run //diypaxos/k8:server.update
 ```
+
+### View K8s Deployments
+
+```shell
+kubectl get pods,svc,ep
+```
+
+### View K8s Logs
+
+```shell
+kubectl logs kvstore-service-0 
+```
+
+
+### Spawn Shell on Container
+
+```shell
+kubectl exec -it kvstore-service-0 -- /bin/bash
+```
+
+Replace `kvstore-service-0` with the replica you want to connect to.
