@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: kvstore-service
   labels:
@@ -8,7 +8,8 @@ spec:
   selector:
     matchLabels:
       app: kvstore
-  replicas: 1
+  serviceName: "nginx"
+  replicas: 6
   template:
     metadata:
       labels:
@@ -16,7 +17,8 @@ spec:
     spec:
       containers:
         - name: kvstore
-          image: ../bazel/diypaxos:diypaxos_image
+          image: "img"
+          imagePullPolicy: Never
           ports:
             - name: kvstore-service
               containerPort: 8080

@@ -1,4 +1,4 @@
 *.log
-bazel-*
+*bazel*
 .ijwb*
 .idea*

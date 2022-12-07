@@ -19,17 +19,15 @@ type KvStoreServer interface {
 
 // Server implements the SimpleKvStore Server.
 type Server struct {
-	name    string
-	storage storage.Storage
+	name     string
+	BaseName string
+	storage  storage.Storage
 }
 
 func NewServer(name string, store storage.Storage) *Server {
 	if name == "" || store == nil {
 		panic("Name and Store required.")
 	}
-	log.Println("++======================++")
-	log.Printf("Server %s started", name)
-	log.Println("++======================++")
 	return &Server{name: name, storage: store}
 }
 

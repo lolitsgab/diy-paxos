@@ -23,7 +23,9 @@ go_binary(
 
 go_image(
     name = "diypaxos_image",
-    # srcs = ["main.go"],
+    args = ["--name=$$HOSTNAME"],
+    base = "@official_ubuntu//image",
     embed = [":diypaxos_lib"],
     importpath = "diy-paxos/diypaxos",
+    visibility = ["//visibility:public"],
 )
