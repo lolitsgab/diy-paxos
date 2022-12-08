@@ -6,7 +6,7 @@ type FakeKvStoreServer struct {
 	InMemoryStorage
 }
 
-func (s *FakeKvStoreServer) setStore(store map[string]int32) {
+func (s *FakeKvStoreServer) setStore(store map[string]Value) {
 	s.store = store
 }
 
@@ -15,19 +15,19 @@ func TestInsert(t *testing.T) {
 		name    string
 		key     string
 		val     int
-		store   map[string]int32
+		store   map[string]Value
 		wantErr bool
 	}{
 		{
 			name:  "Insert new",
 			key:   "new",
 			val:   1,
-			store: map[string]int32{},
+			store: map[string]Value{},
 		}, {
 			name:    "Insert existing",
 			key:     "exist",
 			val:     1,
-			store:   map[string]int32{"exist": 1},
+			store:   map[string]Value{"exist": Value{Value: 1}},
 			wantErr: true,
 		},
 	} {
@@ -46,19 +46,19 @@ func TestGet(t *testing.T) {
 		name    string
 		key     string
 		val     int
-		store   map[string]int32
+		store   map[string]Value
 		wantErr bool
 	}{
 		{
 			name:    "Get DNE",
 			key:     "new",
 			wantErr: true,
-			store:   map[string]int32{},
+			store:   map[string]Value{},
 		}, {
 			name:  "Get Existing",
 			key:   "exist",
 			val:   1,
-			store: map[string]int32{"exist": 1},
+			store: map[string]Value{"exist": Value{Value: 1}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -77,18 +77,18 @@ func TestRemove(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		key     string
-		store   map[string]int32
+		store   map[string]Value
 		wantErr bool
 	}{
 		{
 			name:    "Remove DNE",
 			key:     "dne",
-			store:   map[string]int32{},
+			store:   map[string]Value{},
 			wantErr: true,
 		}, {
 			name:  "Remove Existing",
 			key:   "exist",
-			store: map[string]int32{"exist": 1},
+			store: map[string]Value{"exist": Value{Value: 1}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -113,19 +113,19 @@ func TestUpdate(t *testing.T) {
 		name    string
 		key     string
 		new     int
-		store   map[string]int32
+		store   map[string]Value
 		wantErr bool
 	}{
 		{
 			name:    "Update DNE",
 			key:     "dne",
-			store:   map[string]int32{},
+			store:   map[string]Value{},
 			wantErr: true,
 		}, {
 			name:  "Update Existing",
 			key:   "exist",
 			new:   2,
-			store: map[string]int32{"exist": 1},
+			store: map[string]Value{"exist": Value{Value: 1}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -137,7 +137,7 @@ func TestUpdate(t *testing.T) {
 			if tc.wantErr {
 				return
 			}
-			if val, _ := tc.store[tc.key]; val != int32(tc.new) {
+			if val, _ := tc.store[tc.key]; val.Value != int32(tc.new) {
 				t.Errorf("got %v, want %v", val, tc.new)
 			}
 		})
@@ -149,18 +149,18 @@ func TestUpsert(t *testing.T) {
 		name    string
 		key     string
 		new     int
-		store   map[string]int32
+		store   map[string]Value
 		wantErr bool
 	}{
 		{
 			name:  "Update DNE",
 			key:   "dne",
-			store: map[string]int32{},
+			store: map[string]Value{},
 		}, {
 			name:  "Update Existing",
 			key:   "exist",
 			new:   2,
-			store: map[string]int32{"exist": 1},
+			store: map[string]Value{"exist": {Value: 1}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -172,7 +172,7 @@ func TestUpsert(t *testing.T) {
 			if tc.wantErr {
 				return
 			}
-			if val, _ := tc.store[tc.key]; val != int32(tc.new) {
+			if val, _ := tc.store[tc.key]; val.Value != int32(tc.new) {
 				t.Errorf("got %v, want %v", val, tc.new)
 			}
 		})
