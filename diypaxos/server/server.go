@@ -19,6 +19,8 @@ type KvStoreServer interface {
 	Remove(ctx context.Context, in *pb.RemoveRequest) (*pb.RemoveResponse, error)
 	Update(ctx context.Context, in *pb.UpdateRequest) (*pb.UpdateResponse, error)
 	Upsert(ctx context.Context, in *pb.UpsertRequest) (*pb.UpsertResponse, error)
+	Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error)
+	Promise(ctx context.Context, in *pb.PromiseRequest) (*pb.PromiseResponse, error)
 }
 
 // Server implements the SimpleKvStore Server.

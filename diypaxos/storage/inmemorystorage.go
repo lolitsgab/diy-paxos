@@ -5,6 +5,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type Metadata struct {
+	Version int32
+}
+
+type Value struct {
+	Value int32
+	Meta  Metadata
+}
+
 // Storage exposes an API to interface with a KV Storage container.
 type Storage interface {
 	Insert(k string, v int32) error
@@ -16,12 +25,12 @@ type Storage interface {
 
 // InMemoryStorage implements Storage with an in-memory table.
 type InMemoryStorage struct {
-	store map[string]int32
+	store map[string]Value
 }
 
 // NewInMemoryStorage creates a new InMemoryStorage instance.
 func NewInMemoryStorage() Storage {
-	return &InMemoryStorage{map[string]int32{}}
+	return &InMemoryStorage{map[string]Value{}}
 }
 
 // Insert inserts a KV pair into the Storage container.
@@ -29,7 +38,7 @@ func (i *InMemoryStorage) Insert(k string, v int32) error {
 	if _, exists := i.store[k]; exists {
 		return status.New(codes.AlreadyExists, "cannot insert to an already populated key").Err()
 	}
-	i.store[k] = v
+	i.store[k] = Value{Value: v}
 	return nil
 }
 
@@ -38,7 +47,7 @@ func (i *InMemoryStorage) Get(k string) (int32, error) {
 	if _, exists := i.store[k]; !exists {
 		return -1, status.New(codes.NotFound, "cannot get non existent key").Err()
 	}
-	return i.store[k], nil
+	return i.store[k].Value, nil
 }
 
 // Remove deletes a value by key from a storage container.
@@ -55,7 +64,7 @@ func (i *InMemoryStorage) Update(k string, v int32) error {
 	if _, exists := i.store[k]; !exists {
 		return status.New(codes.NotFound, "cannot update a non existent key").Err()
 	}
-	i.store[k] = v
+	i.store[k] = Value{Value: v}
 	return nil
 }
 
