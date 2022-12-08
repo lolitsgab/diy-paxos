@@ -3,6 +3,7 @@ module diy-paxos
 go 1.19
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/bazelbuild/rules_docker v0.25.0
 	github.com/google/go-containerregistry v0.12.1
 	google.golang.org/grpc v1.51.0

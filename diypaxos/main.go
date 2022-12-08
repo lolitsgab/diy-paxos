@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"time"
 
 	pb "diy-paxos/diypaxos/proto"
 
@@ -14,15 +16,13 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-var (
-	port = flag.Int("port", 8080, "The server port")
-	name = flag.String("name", "", "The server hostname")
-)
+var port = flag.Int("port", 8080, "The server port")
 
 func main() {
 	flag.Parse()
-	if *name == "" {
-		panic("--name flag required")
+	hostname, err := os.Hostname()
+	if hostname == "" {
+		panic(fmt.Sprintf("No hostname provided: {%v}", hostname))
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
@@ -31,11 +31,14 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	srv := server.NewServer("server1", storage.NewInMemoryStorage())
+	srv := server.NewServer(hostname, "headless-kvstore", storage.NewInMemoryStorage())
 	pb.RegisterSimpleKvStoreServer(s, srv)
 	reflection.Register(s)
+	if err := srv.GetReplicaIPs(10, time.Second*2); err != nil {
+		log.Panicf("could not fetch replicas: %v", err)
+	}
 	log.Println("++======================++")
-	log.Printf("server %v listening at %v", *name, *port)
+	log.Printf("server %v listening at %v", hostname, *port)
 	log.Println("++======================++")
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

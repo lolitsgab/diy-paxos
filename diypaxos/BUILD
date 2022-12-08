@@ -23,7 +23,7 @@ go_binary(
 
 go_image(
     name = "diypaxos_image",
-    args = ["--name=$$HOSTNAME"],
+    # args = ["--name=$$HOSTNAME"],
     base = "@official_ubuntu//image",
     embed = [":diypaxos_lib"],
     importpath = "diy-paxos/diypaxos",

@@ -22,15 +22,3 @@ spec:
           ports:
             - name: kvstore-service
               containerPort: 8080
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: headless-kvstore
-spec:
-  clusterIP: None
-  ports:
-  - port: 80
-    targetPort: 8080
-  selector:
-    app: kvstore

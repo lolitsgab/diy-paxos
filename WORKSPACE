@@ -616,6 +616,13 @@ go_repository(
     version = "v3.0.3",
 )
 
+go_repository(
+    name = "com_github_avast_retry_go",
+    importpath = "github.com/avast/retry-go",
+    sum = "h1:4SOWQ7Qs+oroOTQOYnAHqelpCO0biHSxpiH9JdtuBj0=",
+    version = "v3.0.0+incompatible",
+)
+
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.19.3")

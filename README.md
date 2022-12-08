@@ -30,19 +30,22 @@ We are deploying a Golang gRPC server using K8s. The base server is Ubuntu 16.0,
 #### Start
 
 ```shell
-bazel run //diypaxos/k8:server.apply
+bazel run //diypaxos/k8:deployment.apply
+
+# or
+bazel run //diypaxos/k8:deployment.delete && bazel run //diypaxos/k8:deployment.apply
 ```
 
 #### Stop
 
 ```shell
-bazel run //diypaxos/k8:server.delete
+bazel run //diypaxos/k8:deployment.delete
 ```
 
 #### Update
 
 ```shell
-bazel run //diypaxos/k8:server.update
+bazel run //diypaxos/k8:deployment.update
 ```
 
 ### View K8s Deployments
@@ -53,10 +56,17 @@ kubectl get pods,svc,ep
 
 ### View K8s Logs
 
+#### For one host:
+
 ```shell
 kubectl logs kvstore-service-0 
 ```
 
+#### For all hosts:
+
+```shell
+kubectl logs -l app=kvstore --all-containers --ignore-errors
+```
 
 ### Spawn Shell on Container
 
@@ -65,3 +75,11 @@ kubectl exec -it kvstore-service-0 -- /bin/bash
 ```
 
 Replace `kvstore-service-0` with the replica you want to connect to.
+
+### Resolve all hosts in a cluster
+
+```shell
+kubectl apply -f https://k8s.io/examples/admin/dns/dnsutils.yaml
+kubectl exec -i -t dnsutils -- nslookup kubernetes.default
+```
+

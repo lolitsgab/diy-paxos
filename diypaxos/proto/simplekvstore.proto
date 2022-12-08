@@ -10,6 +10,10 @@ service SimpleKvStore {
   rpc Update (UpdateRequest) returns (UpdateResponse) {}
 
   rpc Upsert (UpsertRequest) returns (UpsertResponse) {}
+
+  rpc Promise (PromiseRequest) returns (PromiseResponse) {}
+
+  rpc Accept (AcceptRequest) returns (AcceptResponse) {}
 }
 
 message InsertRequest {
@@ -46,3 +50,32 @@ message RemoveRequest {
 }
 
 message RemoveResponse {}
+
+enum Mode {
+  REMOVE = 0;
+  UPSERT = 1;
+}
+
+message PromiseRequest{
+  string name = 1;
+  int32 counter = 2;
+}
+
+message PromiseResponse{
+  string name = 1;
+  bool promise = 2;
+}
+
+
+message AcceptRequest{
+  string name = 1;
+  int32 counter = 2;
+  string key = 3;
+  int32 val = 4;
+  Mode mode = 5;
+}
+
+message AcceptResponse{
+  string name = 1;
+  bool committed = 2;
+}

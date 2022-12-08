@@ -8,5 +8,6 @@ go_library(
     deps = [
         "//diypaxos/proto",
         "//diypaxos/storage",
+        "@com_github_avast_retry_go//:retry-go",
     ],
 )
