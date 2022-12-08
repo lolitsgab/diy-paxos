@@ -12,5 +12,7 @@ go_library(
         "//diypaxos/proto",
         "//diypaxos/storage",
         "@com_github_avast_retry_go//:retry-go",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
     ],
 )
