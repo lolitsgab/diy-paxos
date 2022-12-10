@@ -39,7 +39,7 @@ func (i *InMemoryStorage) Insert(k string, v int32) error {
 	if _, exists := i.store.Load(k); exists {
 		return status.New(codes.AlreadyExists, "cannot insert to an already populated key").Err()
 	}
-	i.store.Store(k, Value{Value: v})
+	i.store.Store(k, Value{Value: v, Meta: Metadata{Version: 1}})
 	return nil
 }
 
@@ -63,10 +63,13 @@ func (i *InMemoryStorage) Remove(k string) error {
 
 // Update changes the value associated with a key entry in the Storage container iff it exists.
 func (i *InMemoryStorage) Update(k string, v int32) error {
-	if _, exists := i.store.Load(k); !exists {
+	got, exists := i.store.Load(k)
+	if !exists {
 		return status.New(codes.NotFound, "cannot update a non existent key").Err()
 	}
-	i.store.Store(k, Value{Value: v})
+
+	version := got.(Value).Meta.Version + 1
+	i.store.Store(k, Value{Value: v, Meta: Metadata{Version: version}})
 	return nil
 }
 
