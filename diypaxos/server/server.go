@@ -3,6 +3,9 @@ package server
 import (
 	"context"
 	"diy-paxos/diypaxos/storage"
+	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"time"
@@ -30,6 +33,13 @@ type Server struct {
 	storage         storage.Storage
 	headlessService string
 	replicas        []net.IP
+	promises        map[string]storage.Value
+}
+
+func LogAndReturnError(code codes.Code, format string, args ...interface{}) error {
+	msg := fmt.Sprintf(format, args)
+	log.Printf(msg)
+	return status.New(code, msg).Err()
 }
 
 // GetReplicaIPs resolves the IP addressed of all replicas.

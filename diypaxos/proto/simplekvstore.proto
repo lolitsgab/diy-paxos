@@ -58,7 +58,9 @@ enum Mode {
 
 message PromiseRequest{
   string name = 1;
-  int32 counter = 2;
+  int32 version = 2;
+  string key = 3;
+  int32 value = 4;
 }
 
 message PromiseResponse{
@@ -69,7 +71,7 @@ message PromiseResponse{
 
 message AcceptRequest{
   string name = 1;
-  int32 counter = 2;
+  int32 version = 2;
   string key = 3;
   int32 val = 4;
   Mode mode = 5;
