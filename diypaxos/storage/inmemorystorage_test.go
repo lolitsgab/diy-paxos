@@ -180,12 +180,17 @@ func TestUpsert(t *testing.T) {
 			name:  "Update Existing",
 			key:   "exist",
 			new:   2,
-			store: toSyncStore(map[string]Value{"exist": {Value: 1}}),
+			store: toSyncStore(map[string]Value{"exist": {Value: 1, Meta: Metadata{Version: 1}}}),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			storage := &FakeKvStoreServer{}
 			storage.setStore(tc.store)
+			oldVersion := int32(0)
+			v, ok := tc.store.Load(tc.key)
+			if ok {
+				oldVersion = v.(Value).Meta.Version
+			}
 			if err := storage.Upsert(tc.key, int32(tc.new)); (err != nil && !tc.wantErr) || (err == nil && tc.wantErr) {
 				t.Errorf("got error %v; wanted err? %v", err.Error(), tc.wantErr)
 			}
@@ -193,7 +198,9 @@ func TestUpsert(t *testing.T) {
 				return
 			}
 			if val, _ := tc.store.Load(tc.key); val.(Value).Value != int32(tc.new) {
-				t.Errorf("got %v, want %v", val, tc.new)
+				t.Errorf("got value %v, want %v", val, tc.new)
+			} else if gotVer, wantVer := val.(Value).Meta.Version, oldVersion+1; gotVer != wantVer {
+				t.Errorf("got version %v, want %v", gotVer, wantVer)
 			}
 		})
 	}
