@@ -9,6 +9,7 @@ go_library(
     deps = [
         "//diypaxos/proto",
         "//diypaxos/server",
+        "//diypaxos/utils",
         "//diypaxos/storage",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//reflection",

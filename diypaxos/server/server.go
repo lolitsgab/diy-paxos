@@ -2,17 +2,12 @@ package server
 
 import (
 	"context"
+	pb "diy-paxos/diypaxos/proto"
 	"diy-paxos/diypaxos/storage"
 	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
-	"net"
-	"time"
-
-	"github.com/avast/retry-go"
-
-	pb "diy-paxos/diypaxos/proto"
 )
 
 type KvStoreServer interface {
@@ -28,11 +23,10 @@ type KvStoreServer interface {
 
 // Server implements the SimpleKvStore Server.
 type Server struct {
-	name            string
-	BaseName        string
+	Addr            string
 	storage         storage.Storage
 	headlessService string
-	replicas        []net.IP
+	Replicas        []string
 	promises        map[string]storage.Value
 }
 
@@ -42,30 +36,12 @@ func LogAndReturnError(code codes.Code, format string, args ...interface{}) erro
 	return status.New(code, msg).Err()
 }
 
-// GetReplicaIPs resolves the IP addressed of all replicas.
-func (s *Server) GetReplicaIPs(retries uint, backOffDelay time.Duration) error {
-	return retry.Do(func() error {
-		reps, err := net.LookupIP(s.headlessService)
-		if err != nil {
-			log.Printf("%v could not get replicas from %v: %v", s.name, s.headlessService, err)
-			return err
-		}
-		s.replicas = reps
-		log.Printf("%v has replicas: %v", s.name, s.replicas)
-		return nil
-	},
-		retry.Attempts(retries),
-		retry.Delay(backOffDelay),
-		retry.DelayType(retry.BackOffDelay),
-	)
-}
-
 // NewServer generates a new Server using the provided Storage as a Storage backend.
 func NewServer(name, headlessServer string, store storage.Storage) *Server {
 	if name == "" || store == nil {
 		panic("Name and Store required.")
 	}
-	return &Server{name: name, storage: store, headlessService: headlessServer}
+	return &Server{Addr: name, storage: store, headlessService: headlessServer}
 }
 
 // Get a value by key.

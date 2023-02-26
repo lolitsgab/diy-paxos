@@ -30,9 +30,11 @@ We are deploying a Golang gRPC server using K8s. The base server is Ubuntu 16.0,
 #### Start
 
 ```shell
+eval $(minikube docker-env) # only need to run once
 bazel run //diypaxos/k8:deployment.apply
 
 # or
+eval $(minikube docker-env) # only need to run once
 bazel run //diypaxos/k8:deployment.delete && bazel run //diypaxos/k8:deployment.apply
 ```
 
@@ -81,5 +83,13 @@ Replace `kvstore-service-0` with the replica you want to connect to.
 ```shell
 kubectl apply -f https://k8s.io/examples/admin/dns/dnsutils.yaml
 kubectl exec -i -t dnsutils -- nslookup kubernetes.default
+```
+
+### Send requests using grpc_cli
+
+You can send gRPC calls via the CLI using [grpc_cli](https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md).
+
+```shell
+grpc_cli call localhost:8080 SimpleKvStore.Get "key: 'hi'"
 ```
 
