@@ -5,8 +5,5 @@ go_library(
     srcs = ["iputils.go"],
     importpath = "diy-paxos/diypaxos/utils",
     visibility = ["//visibility:public"],
-    deps = [
-        "//diypaxos/server",
-        "@com_github_avast_retry_go//:retry-go",
-    ],
+    deps = ["@com_github_avast_retry_go//:retry-go"],
 )

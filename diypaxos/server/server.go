@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"net"
 )
 
 type KvStoreServer interface {
@@ -24,6 +25,7 @@ type KvStoreServer interface {
 // Server implements the SimpleKvStore Server.
 type Server struct {
 	Addr            string
+	Name            string
 	storage         storage.Storage
 	headlessService string
 	Replicas        []string
@@ -37,11 +39,18 @@ func LogAndReturnError(code codes.Code, format string, args ...interface{}) erro
 }
 
 // NewServer generates a new Server using the provided Storage as a Storage backend.
-func NewServer(name, headlessServer string, store storage.Storage) *Server {
-	if name == "" || store == nil {
-		panic("Name and Store required.")
+func NewServer(hostname string, port int, headlessServer string, store storage.Storage) *Server {
+	if hostname == "" || store == nil {
+		panic("Hostname not found.")
 	}
-	return &Server{Addr: name, storage: store, headlessService: headlessServer}
+	addrs, _ := net.LookupIP(hostname)
+	var ipv4 string
+	for _, addr := range addrs {
+		if ip := addr.To4(); ip != nil {
+			ipv4 = fmt.Sprintf("%s:%d", ip.String(), port)
+		}
+	}
+	return &Server{Name: hostname, Addr: ipv4, storage: store, headlessService: headlessServer}
 }
 
 // Get a value by key.
