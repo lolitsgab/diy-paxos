@@ -8,7 +8,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"math"
 	"net"
+	"sync"
 )
 
 type KvStoreServer interface {
@@ -19,17 +21,21 @@ type KvStoreServer interface {
 	Update(ctx context.Context, in *pb.UpdateRequest) (*pb.UpdateResponse, error)
 	Upsert(ctx context.Context, in *pb.UpsertRequest) (*pb.UpsertResponse, error)
 	Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error)
-	Promise(ctx context.Context, in *pb.PromiseRequest) (*pb.PromiseResponse, error)
+	Prepare(ctx context.Context, in *pb.PrepareRequest) (*pb.PrepareResponse, error)
 }
 
 // Server implements the SimpleKvStore Server.
 type Server struct {
 	Addr            string
 	Name            string
+	Id              int
+	Round           float64
+	LeaderName      string
 	storage         storage.Storage
 	headlessService string
 	Replicas        []string
 	promises        map[string]storage.Value
+	mu              sync.Mutex
 }
 
 func LogAndReturnError(code codes.Code, format string, args ...interface{}) error {
@@ -39,7 +45,7 @@ func LogAndReturnError(code codes.Code, format string, args ...interface{}) erro
 }
 
 // NewServer generates a new Server using the provided Storage as a Storage backend.
-func NewServer(hostname string, port int, headlessServer string, store storage.Storage) *Server {
+func NewServer(hostname string, id, port int, headlessServer string, store storage.Storage) *Server {
 	if hostname == "" || store == nil {
 		panic("Hostname not found.")
 	}
@@ -50,7 +56,7 @@ func NewServer(hostname string, port int, headlessServer string, store storage.S
 			ipv4 = fmt.Sprintf("%s:%d", ip.String(), port)
 		}
 	}
-	return &Server{Name: hostname, Addr: ipv4, storage: store, headlessService: headlessServer}
+	return &Server{Name: hostname, Id: id, Round: 0, Addr: ipv4, storage: store, headlessService: headlessServer}
 }
 
 // Get a value by key.
@@ -103,4 +109,36 @@ func (s *Server) Upsert(ctx context.Context, in *pb.UpsertRequest) (*pb.UpsertRe
 		return nil, err
 	}
 	return &pb.UpsertResponse{}, nil
+}
+
+func (s *Server) Prepare(ctx context.Context, in *pb.PrepareRequest) (*pb.PrepareResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Round = math.Max(s.Round, in.Round)
+	return &pb.PrepareResponse{
+		Name:             s.Name,
+		Promise:          s.Round <= in.Round,
+		HighestRoundSeen: s.Round,
+		Val:              s.getLeaderVal(),
+	}, nil
+}
+
+func (s *Server) Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if in.GetRound() >= s.Round {
+		s.LeaderName = string(in.GetVal())
+		s.Round = in.GetRound()
+	}
+	return &pb.AcceptResponse{
+		Name:     s.Name,
+		Accepted: in.GetRound() >= s.Round,
+	}, nil
+}
+
+func (s *Server) getLeaderVal() []byte {
+	if s.LeaderName == "" {
+		return nil
+	}
+	return []byte(s.LeaderName)
 }

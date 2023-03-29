@@ -93,3 +93,6 @@ You can send gRPC calls via the CLI using [grpc_cli](https://github.com/grpc/grp
 grpc_cli call localhost:8080 SimpleKvStore.Get "key: 'hi'"
 ```
 
+bazel run :diypaxos -- --replicas="127.0.1.1:8082,127.0.1.1:8080" --port=8081 --name=foo-1
+bazel run :diypaxos -- --replicas="127.0.1.1:8081,127.0.1.1:8082" --port=8080 --name=foo-2
+bazel run :diypaxos -- --replicas="127.0.1.1:8081,127.0.1.1:8080" --port=8082 --name=foo-3

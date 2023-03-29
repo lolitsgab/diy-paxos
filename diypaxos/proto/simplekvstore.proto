@@ -11,7 +11,7 @@ service SimpleKvStore {
 
   rpc Upsert (UpsertRequest) returns (UpsertResponse) {}
 
-  rpc Promise (PromiseRequest) returns (PromiseResponse) {}
+  rpc Prepare (PrepareRequest) returns (PrepareResponse) {}
 
   rpc Accept (AcceptRequest) returns (AcceptResponse) {}
 }
@@ -56,28 +56,28 @@ enum Mode {
   UPSERT = 1;
 }
 
-message PromiseRequest{
+message PrepareRequest{
   string name = 1;
-  int32 version = 2;
-  string key = 3;
-  int32 value = 4;
+  double round = 2;
 }
 
-message PromiseResponse{
+message PrepareResponse{
   string name = 1;
   bool promise = 2;
+  double highest_round_seen = 3;
+  bytes val = 4;
+  Mode mode = 5;
 }
-
 
 message AcceptRequest{
   string name = 1;
-  int32 version = 2;
+  double round = 2;
   string key = 3;
-  int32 val = 4;
+  bytes val = 4;
   Mode mode = 5;
 }
 
 message AcceptResponse{
   string name = 1;
-  bool committed = 2;
+  bool accepted = 2;
 }
