@@ -58,6 +58,7 @@ func main() {
 		}
 	}()
 	srv.ElectLeader()
+	log.Printf("+++++++++++++++++++++++++++++ Leader elected: %v", srv.LeaderName)
 	wg.Wait()
 }
 
@@ -73,16 +74,18 @@ func getNodeId(hostname string) int {
 }
 
 func initReplicas(srv *server.Server) error {
+	//srv.ReplicaConnections = make(map[string]*grpc.ClientConn)
+	var err error = nil
 	if !*singleton && *replicas != "" {
-		reps, err := utils.ParseReplicaString(*replicas)
+		reps, parseErr := utils.ParseReplicaString(*replicas)
 		srv.Replicas = reps
-		return err
-	}
-	if !*singleton && *discovery_host != "" {
-		reps, err := utils.DiscoverReplicas(*discovery_host, srv.Addr, 10, time.Millisecond*10)
+		err = parseErr
+	} else if !*singleton && *discovery_host != "" {
+		reps, discoverErr := utils.DiscoverReplicas(*discovery_host, srv.Addr, 10, time.Millisecond*10)
 		srv.Replicas = reps
-		return err
+		err = discoverErr
+	} else {
+		log.Printf("using sigleton mode")
 	}
-	log.Printf("using sigleton mode")
-	return nil
+	return err
 }

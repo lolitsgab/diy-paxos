@@ -4,6 +4,7 @@ go_library(
     name = "server",
     srcs = [
         "consensushandlers.go",
+        "leaderelection.go",
         "interceptors.go",
         "server.go",
     ],

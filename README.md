@@ -25,7 +25,7 @@ The key must be of type  `string`, and the value must be of type `int32`. I may 
 We are deploying a Golang gRPC server using K8s. The base server is Ubuntu 16.0, but we can deploy a distroless container by removing the
 `base` line from the deployment BUILD file. We are keeping it with a base of K8s just to facilitate debugging.
 
-### Start/Stop/Update
+### Docker Start/Stop/Update
 
 #### Start
 
@@ -93,6 +93,28 @@ You can send gRPC calls via the CLI using [grpc_cli](https://github.com/grpc/grp
 grpc_cli call localhost:8080 SimpleKvStore.Get "key: 'hi'"
 ```
 
+### Local Start/Stop/Update
+
+The server can be started manually via the Bazel CLI or via the `start.sh` script.
+
+# Start
+
+```shell
 bazel run :diypaxos -- --replicas="127.0.1.1:8082,127.0.1.1:8080" --port=8081 --name=foo-1
 bazel run :diypaxos -- --replicas="127.0.1.1:8081,127.0.1.1:8082" --port=8080 --name=foo-2
 bazel run :diypaxos -- --replicas="127.0.1.1:8081,127.0.1.1:8080" --port=8082 --name=foo-3
+```
+
+or
+
+```shell
+./start.sh 3 # the number is the replica count
+```
+
+# Stop
+
+Graceful shutdown is a WIP. For now, you can send `ctrl+c` or you can use the `stop.sh` script, which will kill all the servers and tmux sessions.
+
+```
+./stop.sh
+```

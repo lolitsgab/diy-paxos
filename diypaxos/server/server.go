@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -26,17 +27,74 @@ type KvStoreServer interface {
 
 // Server implements the SimpleKvStore Server.
 type Server struct {
-	Addr            string
-	Name            string
-	Id              int
-	Round           float64
-	LeaderName      string
-	storage         storage.Storage
-	headlessService string
-	Replicas        []string
-	promises        map[string]storage.Value
-	mu              sync.Mutex
+	Addr               string
+	Name               string
+	Id                 int
+	Round              float64
+	LeaderName         string
+	storage            storage.Storage
+	headlessService    string
+	Replicas           []string
+	ReplicaConnections map[string]pb.SimpleKvStoreClient
+	promises           map[string]storage.Value
+	leaderMu           sync.Mutex
+	roundMu            sync.Mutex
 }
+
+var logger *log.Logger = log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
+
+func (s *Server) Prepare(ctx context.Context, in *pb.PrepareRequest) (*pb.PrepareResponse, error) {
+	logger.Printf("received prepare %v", in)
+	s.leaderMu.Lock()
+	defer s.leaderMu.Unlock()
+	s.roundMu.Lock()
+	defer s.roundMu.Unlock()
+
+	resp := &pb.PrepareResponse{
+		Name:             s.Name,
+		Promise:          s.Round <= in.Round,
+		HighestRoundSeen: math.Max(s.Round, in.Round),
+		Val:              s.getLeaderVal(),
+	}
+	s.Round = math.Max(s.Round, in.Round)
+	logger.Printf("responded to prepare %v", resp)
+	return resp, nil
+}
+
+func (s *Server) Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error) {
+	logger.Printf("received accept %v", in)
+	s.leaderMu.Lock()
+	defer s.leaderMu.Unlock()
+	s.roundMu.Lock()
+	defer s.roundMu.Unlock()
+
+	if in.GetRound() >= s.Round {
+		if s.LeaderName == "" {
+			s.LeaderName = string(in.GetVal())
+		}
+		s.Round = in.GetRound()
+	}
+	resp := &pb.AcceptResponse{
+		Name:     s.Name,
+		Accepted: in.GetRound() >= s.Round,
+	}
+	logger.Printf("responded to accept: %v and leader is %v", resp, s.LeaderName)
+	return resp, nil
+}
+
+func (s *Server) getLeaderVal() []byte {
+	if s.LeaderName == "" {
+		return nil
+	}
+	return []byte(s.LeaderName)
+}
+
+//
+//
+//
+//
+//
+//
 
 func LogAndReturnError(code codes.Code, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args)
@@ -109,36 +167,4 @@ func (s *Server) Upsert(ctx context.Context, in *pb.UpsertRequest) (*pb.UpsertRe
 		return nil, err
 	}
 	return &pb.UpsertResponse{}, nil
-}
-
-func (s *Server) Prepare(ctx context.Context, in *pb.PrepareRequest) (*pb.PrepareResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.Round = math.Max(s.Round, in.Round)
-	return &pb.PrepareResponse{
-		Name:             s.Name,
-		Promise:          s.Round <= in.Round,
-		HighestRoundSeen: s.Round,
-		Val:              s.getLeaderVal(),
-	}, nil
-}
-
-func (s *Server) Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if in.GetRound() >= s.Round {
-		s.LeaderName = string(in.GetVal())
-		s.Round = in.GetRound()
-	}
-	return &pb.AcceptResponse{
-		Name:     s.Name,
-		Accepted: in.GetRound() >= s.Round,
-	}, nil
-}
-
-func (s *Server) getLeaderVal() []byte {
-	if s.LeaderName == "" {
-		return nil
-	}
-	return []byte(s.LeaderName)
 }
