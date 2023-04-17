@@ -10,6 +10,7 @@ go_library(
         "//diypaxos/proto",
         "//diypaxos/server",
         "//diypaxos/storage",
+        "//diypaxos/utils",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//reflection",
     ],

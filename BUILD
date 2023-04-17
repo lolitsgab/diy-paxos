@@ -4,7 +4,7 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 gazelle(name = "gazelle")
 
 gazelle(
-    name = "gazelle-update",
+    name = "gazelle-update-repos",
     args = [
         "-from_file=go.mod",
         "-prune",

@@ -2,17 +2,16 @@ package server
 
 import (
 	"context"
+	pb "diy-paxos/diypaxos/proto"
 	"diy-paxos/diypaxos/storage"
 	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
+	"math"
 	"net"
-	"time"
-
-	"github.com/avast/retry-go"
-
-	pb "diy-paxos/diypaxos/proto"
+	"os"
+	"sync"
 )
 
 type KvStoreServer interface {
@@ -23,18 +22,79 @@ type KvStoreServer interface {
 	Update(ctx context.Context, in *pb.UpdateRequest) (*pb.UpdateResponse, error)
 	Upsert(ctx context.Context, in *pb.UpsertRequest) (*pb.UpsertResponse, error)
 	Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error)
-	Promise(ctx context.Context, in *pb.PromiseRequest) (*pb.PromiseResponse, error)
+	Prepare(ctx context.Context, in *pb.PrepareRequest) (*pb.PrepareResponse, error)
 }
 
 // Server implements the SimpleKvStore Server.
 type Server struct {
-	name            string
-	BaseName        string
-	storage         storage.Storage
-	headlessService string
-	replicas        []net.IP
-	promises        map[string]storage.Value
+	Addr               string
+	Name               string
+	Id                 int
+	Round              float64
+	LeaderName         string
+	storage            storage.Storage
+	headlessService    string
+	Replicas           []string
+	ReplicaConnections map[string]pb.SimpleKvStoreClient
+	promises           map[string]storage.Value
+	leaderMu           sync.Mutex
+	roundMu            sync.Mutex
 }
+
+var logger *log.Logger = log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
+
+func (s *Server) Prepare(ctx context.Context, in *pb.PrepareRequest) (*pb.PrepareResponse, error) {
+	logger.Printf("received prepare %v", in)
+	s.leaderMu.Lock()
+	defer s.leaderMu.Unlock()
+	s.roundMu.Lock()
+	defer s.roundMu.Unlock()
+
+	resp := &pb.PrepareResponse{
+		Name:             s.Name,
+		Promise:          s.Round <= in.Round,
+		HighestRoundSeen: math.Max(s.Round, in.Round),
+		Val:              s.getLeaderVal(),
+	}
+	s.Round = math.Max(s.Round, in.Round)
+	logger.Printf("responded to prepare %v", resp)
+	return resp, nil
+}
+
+func (s *Server) Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptResponse, error) {
+	logger.Printf("received accept %v", in)
+	s.leaderMu.Lock()
+	defer s.leaderMu.Unlock()
+	s.roundMu.Lock()
+	defer s.roundMu.Unlock()
+
+	if in.GetRound() >= s.Round {
+		if s.LeaderName == "" {
+			s.LeaderName = string(in.GetVal())
+		}
+		s.Round = in.GetRound()
+	}
+	resp := &pb.AcceptResponse{
+		Name:     s.Name,
+		Accepted: in.GetRound() >= s.Round,
+	}
+	logger.Printf("responded to accept: %v and leader is %v", resp, s.LeaderName)
+	return resp, nil
+}
+
+func (s *Server) getLeaderVal() []byte {
+	if s.LeaderName == "" {
+		return nil
+	}
+	return []byte(s.LeaderName)
+}
+
+//
+//
+//
+//
+//
+//
 
 func LogAndReturnError(code codes.Code, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args)
@@ -42,30 +102,19 @@ func LogAndReturnError(code codes.Code, format string, args ...interface{}) erro
 	return status.New(code, msg).Err()
 }
 
-// GetReplicaIPs resolves the IP addressed of all replicas.
-func (s *Server) GetReplicaIPs(retries uint, backOffDelay time.Duration) error {
-	return retry.Do(func() error {
-		reps, err := net.LookupIP(s.headlessService)
-		if err != nil {
-			log.Printf("%v could not get replicas from %v: %v", s.name, s.headlessService, err)
-			return err
-		}
-		s.replicas = reps
-		log.Printf("%v has replicas: %v", s.name, s.replicas)
-		return nil
-	},
-		retry.Attempts(retries),
-		retry.Delay(backOffDelay),
-		retry.DelayType(retry.BackOffDelay),
-	)
-}
-
 // NewServer generates a new Server using the provided Storage as a Storage backend.
-func NewServer(name, headlessServer string, store storage.Storage) *Server {
-	if name == "" || store == nil {
-		panic("Name and Store required.")
+func NewServer(hostname string, id, port int, headlessServer string, store storage.Storage) *Server {
+	if hostname == "" || store == nil {
+		panic("Hostname not found.")
 	}
-	return &Server{name: name, storage: store, headlessService: headlessServer}
+	addrs, _ := net.LookupIP(hostname)
+	var ipv4 string
+	for _, addr := range addrs {
+		if ip := addr.To4(); ip != nil {
+			ipv4 = fmt.Sprintf("%s:%d", ip.String(), port)
+		}
+	}
+	return &Server{Name: hostname, Id: id, Round: 0, Addr: ipv4, storage: store, headlessService: headlessServer}
 }
 
 // Get a value by key.
