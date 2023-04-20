@@ -91,6 +91,7 @@ You can send gRPC calls via the CLI using [grpc_cli](https://github.com/grpc/grp
 
 ```shell
 grpc_cli call localhost:8080 SimpleKvStore.Get "key: 'hi'"
+grpc_cli call localhost:8081 SimpleKvStore.Insert "key: 'hi' val: 1"
 ```
 
 ### Local Start/Stop/Update

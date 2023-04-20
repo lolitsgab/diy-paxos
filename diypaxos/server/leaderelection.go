@@ -17,8 +17,8 @@ type Candidate struct {
 
 func (s *Server) ElectLeader() {
 	for {
-		randSleep()
-		if s.LeaderName != "" {
+		sleepIdSeconds(s.Id)
+		if s.isLeaderElected() {
 			break
 		}
 		candidate, err := proposeLeader(s)
@@ -33,6 +33,18 @@ func (s *Server) ElectLeader() {
 		}
 		logger.Printf("unable to get leader accepted: %v", err.Error())
 	}
+}
+
+func (s *Server) isLeaderElected() bool {
+	s.leaderMu.Lock()
+	defer s.leaderMu.Unlock()
+	return s.LeaderName != ""
+}
+
+func (s *Server) isLeader() bool {
+	s.leaderMu.Lock()
+	defer s.leaderMu.Unlock()
+	return s.LeaderName == s.Addr
 }
 
 func updateLeaderFromCandidate(s *Server, candidate *Candidate) {
@@ -51,7 +63,9 @@ func calculateMajority(replicaCount int) int {
 func getAcceptFromMajority(s *Server, candidate *Candidate) error {
 	majority := calculateMajority(len(s.Replicas))
 	for _, addr := range s.Replicas {
-		sendAccept(addr, candidate, s, majority)
+		if sendAccept(addr, candidate, s, majority) {
+			majority--
+		}
 	}
 	if majority > 0 {
 		return fmt.Errorf("no majority accepted")
@@ -59,24 +73,23 @@ func getAcceptFromMajority(s *Server, candidate *Candidate) error {
 	return nil
 }
 
-func sendAccept(addr string, candidate *Candidate, s *Server, majority int) {
+func sendAccept(addr string, candidate *Candidate, s *Server, majority int) bool {
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	defer conn.Close()
 	if err != nil {
 		logger.Printf("Failed to dial %v: %v", addr, err)
-		return
+		return false
 	}
 	client := pb.NewSimpleKvStoreClient(conn)
 	req := &pb.AcceptRequest{Name: s.Name, Round: s.Round, Key: "leader", Val: []byte(candidate.leader)}
 	logger.Printf("sending accept %v to %v", req, addr)
+	s.roundMu.Lock()
 	resp, err := client.Accept(context.Background(), req)
-	if err != nil {
-		return
+	if err == nil && resp.GetHighestRoundSeen() > s.Round {
+		s.Round = resp.GetHighestRoundSeen()
 	}
-	if resp.Accepted {
-		majority -= 1
-	}
-	logger.Printf("received %v from %v", resp, resp.Name)
+	s.roundMu.Unlock()
+	return err == nil && resp.GetAccepted()
 }
 
 func proposeLeader(s *Server) (*Candidate, error) {
@@ -85,7 +98,7 @@ func proposeLeader(s *Server) (*Candidate, error) {
 	s.Round = math.Max(s.Round, math.Trunc(s.Round+1)+postfix)
 	candidate := &Candidate{
 		round:  s.Round,
-		leader: s.Name,
+		leader: s.Addr,
 	}
 	s.roundMu.Unlock()
 
@@ -152,4 +165,11 @@ func randSleep() {
 	logger.Printf("Sleeping %d milliseconds...\n", n)
 	time.Sleep(time.Duration(n) * time.Millisecond)
 	logger.Println("Done")
+}
+
+func sleepIdSeconds(id int) {
+	duration := id * 1000
+	logger.Printf("Sleeping %d milliseconds...\n", duration)
+	time.Sleep(time.Duration(duration) * time.Millisecond)
+	logger.Println("Woke up.")
 }

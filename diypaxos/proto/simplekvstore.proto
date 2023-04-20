@@ -80,4 +80,5 @@ message AcceptRequest{
 message AcceptResponse{
   string name = 1;
   bool accepted = 2;
+  double highest_round_seen = 3;
 }

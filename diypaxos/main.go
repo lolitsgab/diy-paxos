@@ -24,6 +24,19 @@ var discovery_host = flag.String("discovery-host", "headless-kvstore", "hostname
 var name = flag.String("name", "", "name of this server")
 var singleton = flag.Bool("singleton", false, "enable if this is a single node with no replicas.")
 
+// Get preferred outbound ip of this machine
+func GetOutboundIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
+}
+
 func main() {
 	flag.Parse()
 	hostname, err := os.Hostname()
@@ -58,7 +71,6 @@ func main() {
 		}
 	}()
 	srv.ElectLeader()
-	log.Printf("+++++++++++++++++++++++++++++ Leader elected: %v", srv.LeaderName)
 	wg.Wait()
 }
 

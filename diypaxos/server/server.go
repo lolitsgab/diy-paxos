@@ -5,6 +5,7 @@ import (
 	pb "diy-paxos/diypaxos/proto"
 	"diy-paxos/diypaxos/storage"
 	"fmt"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
@@ -71,14 +72,16 @@ func (s *Server) Accept(ctx context.Context, in *pb.AcceptRequest) (*pb.AcceptRe
 	if in.GetRound() >= s.Round {
 		if s.LeaderName == "" {
 			s.LeaderName = string(in.GetVal())
+			log.Printf("+++++++++++++++++++++++ Leader elected: %v +++++++++++++++++++++++", s.LeaderName)
 		}
 		s.Round = in.GetRound()
 	}
 	resp := &pb.AcceptResponse{
-		Name:     s.Name,
-		Accepted: in.GetRound() >= s.Round,
+		Name:             s.Name,
+		Accepted:         in.GetRound() >= s.Round,
+		HighestRoundSeen: math.Max(s.Round, in.Round),
 	}
-	logger.Printf("responded to accept: %v and leader is %v", resp, s.LeaderName)
+	logger.Printf("responded to accept: %v", resp)
 	return resp, nil
 }
 
@@ -89,17 +92,21 @@ func (s *Server) getLeaderVal() []byte {
 	return []byte(s.LeaderName)
 }
 
-//
-//
-//
-//
-//
-//
-
 func LogAndReturnError(code codes.Code, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args)
 	log.Printf(msg)
 	return status.New(code, msg).Err()
+}
+
+// Get preferred outbound ip of this machine
+func GetOutboundIP(port int) string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return fmt.Sprintf("%s:%d", localAddr.IP.To4().String(), port)
 }
 
 // NewServer generates a new Server using the provided Storage as a Storage backend.
@@ -107,14 +114,7 @@ func NewServer(hostname string, id, port int, headlessServer string, store stora
 	if hostname == "" || store == nil {
 		panic("Hostname not found.")
 	}
-	addrs, _ := net.LookupIP(hostname)
-	var ipv4 string
-	for _, addr := range addrs {
-		if ip := addr.To4(); ip != nil {
-			ipv4 = fmt.Sprintf("%s:%d", ip.String(), port)
-		}
-	}
-	return &Server{Name: hostname, Id: id, Round: 0, Addr: ipv4, storage: store, headlessService: headlessServer}
+	return &Server{Name: hostname, Id: id, Round: 0, Addr: GetOutboundIP(port), storage: store, headlessService: headlessServer}
 }
 
 // Get a value by key.
@@ -131,6 +131,22 @@ func (s *Server) Get(ctx context.Context, in *pb.GetRequest) (*pb.GetResponse, e
 // Insert a KV pair.
 func (s *Server) Insert(ctx context.Context, in *pb.InsertRequest) (*pb.InsertResponse, error) {
 	log.Printf("Received an Insert(%v) request.", in)
+	if !s.isLeader() {
+		conn, err := grpc.Dial(s.LeaderName, grpc.WithInsecure())
+		defer conn.Close()
+		if err != nil {
+			logger.Printf("Failed to dial %v: %v", s.LeaderName, err)
+			return nil, err
+		}
+		client := pb.NewSimpleKvStoreClient(conn)
+		logger.Printf("sending insert %v to %v", in, s.LeaderName)
+		resp, err := client.Insert(context.Background(), in)
+		if err != nil {
+			logger.Printf("unable to contact %v: %v", s.LeaderName, err.Error())
+			return nil, err
+		}
+		return resp, nil
+	}
 	err := s.storage.Insert(in.GetKey(), in.GetVal())
 	if err != nil {
 		log.Printf("error in Insert(%v, %v): %v", ctx, in, err)
